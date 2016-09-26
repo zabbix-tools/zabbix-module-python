@@ -3,12 +3,14 @@ lib_LTLIBRARIES = libzbxpython.la
 libzbxpython_la_SOURCES = \
 	libzbxpython.h \
 	libzbxpython.c \
-	python.c
+	log.c \
+	python.c \
+	route.c
 
 libzbxpython_la_CFLAGS = \
+	$(DEBUG_CPPFLAGS) \
 	$(ZABBIX_CPPFLAGS) \
 	$(PYTHON_CPPFLAGS)
-
 
 libzbxpython_la_LDFLAGS = \
 	-shared \
