@@ -19,6 +19,9 @@ def rand(request):
 
   return random.randrange(l, u)
 
+def zbx_module_init():
+  random.seed()
+
 def zbx_module_item_list():
   return [
     zabbix_module.AgentItem("python.ping",   fn = ping),

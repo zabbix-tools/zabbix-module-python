@@ -43,8 +43,8 @@ int         perrorf(AGENT_RESULT *result, const char *format, ...);
 int         zbx_metric_len(ZBX_METRIC *m);
 ZBX_METRIC  *zbx_metric_merge(ZBX_METRIC *a, ZBX_METRIC *b);
 
-ZBX_METRIC  *get_module_item_list(PyObject *pyModule);
-
+int         python_module_init(PyObject *pyModule);
+ZBX_METRIC  *python_module_item_list(PyObject *pyModule);
 char        *python_str(PyObject *pyValue);
 int         python_add_module_path(AGENT_RESULT *result, const char *path);
 PyObject    *python_import_module(AGENT_RESULT *result, const char *module);

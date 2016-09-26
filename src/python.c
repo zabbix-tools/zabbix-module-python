@@ -61,7 +61,31 @@ PyObject *python_import_module(AGENT_RESULT *result, const char *module)
     return pyModule;
 }
 
-ZBX_METRIC *get_module_item_list(PyObject *pyModule)
+int python_module_init(PyObject *pyModule)
+{
+    int ret = ZBX_MODULE_FAIL;
+    PyObject *pyFunc;
+
+    const char *moduleName = PyModule_GetName(pyModule);    
+
+    // check for zbx_module_item_list function in module
+    if(NULL == (pyFunc = PyObject_GetAttrString(pyModule, "zbx_module_init")) || 0 == PyFunction_Check(pyFunc)) {
+        zabbix_log(LOG_LEVEL_INFORMATION, "function not found: %s.zbx_module_init", moduleName);
+    } else {
+        // call function
+        if(NULL == (PyObject_CallObject(pyFunc, NULL))) {
+            perrorf(NULL, "error calling %s.zbx_module_init", moduleName);
+        } else {
+            ret = ZBX_MODULE_OK;
+        }
+
+        Py_DECREF(pyFunc);
+    }
+
+    return ret;
+}
+
+ZBX_METRIC *python_module_item_list(PyObject *pyModule)
 {
     ZBX_METRIC *keys = NULL, *item;
     PyObject *pyFunc, *pyKeys, *pyIter, *pyItem;

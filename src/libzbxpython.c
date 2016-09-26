@@ -37,10 +37,16 @@ int  zbx_module_init() {
     if(NULL == (pyAgentModule = python_import_module(NULL, PYTHON_MODULE)))
         return ZBX_MODULE_FAIL;
 
-    // advise module of module path
+    // advise python module of agent module load path
     pyValue = PyUnicode_FromString(ZABBIX_MODULE_PATH);
     PyObject_SetAttrString(pyAgentModule, "zabbix_module_path", pyValue);
     Py_DECREF(pyValue);
+
+    // call zbx_module_init in python module
+    if (ZBX_MODULE_FAIL == python_module_init(pyAgentModule)) {
+        errorf(NULL, "failed to initialize " PYTHON_MODULE " python module");
+        return ZBX_MODULE_FAIL;
+    }
 
     // cache router function
     if (NULL == (pyRouterFunc = PyObject_GetAttrString(pyAgentModule, "route"))) {
@@ -54,7 +60,7 @@ int  zbx_module_init() {
     keys[0].function = PYTHON_MODVER;
 
     // init items from zabbix_module python module
-    if(NULL == (m = get_module_item_list(pyAgentModule))) {
+    if(NULL == (m = python_module_item_list(pyAgentModule))) {
         errorf(NULL, "cannot read item list from " PYTHON_MODULE " python module");    
         return ZBX_MODULE_FAIL;
     }

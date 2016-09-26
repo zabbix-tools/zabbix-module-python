@@ -8,6 +8,8 @@ python_version_string = "Python %i.%i.%i-%s" % sys.version_info[:4]
 
 zabbix_module_path    = "/var/lib/zabbix/modules/python"
 
+modules               = []
+
 routes                = {}
 
 class AgentRequest:
@@ -65,16 +67,11 @@ def version(request):
   
   return python_version_string
 
-def zbx_module_item_list():
-  # add builtin items
-  items = [
-    AgentItem("python.version", fn = version),
-  ]
-
+def zbx_module_init():
   # ensure module path is in search path
   sys.path.insert(0, zabbix_module_path)
 
-  # iterate over installed modules
+  # load installed agent modules
   for path in glob.glob(zabbix_module_path + "/*.py"):
     mod_name = os.path.basename(path)
     mod_name = mod_name[0:len(mod_name) - 3]
@@ -85,7 +82,22 @@ def zbx_module_item_list():
 
     # import module
     mod = __import__(mod_name)
-    items += mod.zbx_module_item_list()
+    modules.append(mod)
+
+    # init module
+    if hasattr(mod, 'zbx_module_init'):
+      mod.zbx_module_init()
+
+def zbx_module_item_list():
+  # add builtin items
+  items = [
+    AgentItem("python.version", fn = version),
+  ]
+
+  # iterate over installed modules
+  for mod in modules:
+    if mod.zbx_module_item_list:
+      items += mod.zbx_module_item_list()
 
   # add routes for imported module items
   for item in items:
