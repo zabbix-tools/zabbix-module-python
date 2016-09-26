@@ -85,8 +85,10 @@ def zbx_module_init():
     modules.append(mod)
 
     # init module
-    if hasattr(mod, 'zbx_module_init'):
+    try:
       mod.zbx_module_init()
+    except AttributeError:
+      pass
 
 def zbx_module_item_list():
   # add builtin items
@@ -96,8 +98,10 @@ def zbx_module_item_list():
 
   # iterate over installed modules
   for mod in modules:
-    if mod.zbx_module_item_list:
+    try:
       items += mod.zbx_module_item_list()
+    except AttributeError:
+      pass
 
   # add routes for imported module items
   for item in items:
