@@ -2,19 +2,19 @@ import sys
 import glob
 import os.path
 
-__version__           = "1.0.0"
+__version__             = "1.0.0"
 
 __python_version_string = "Python %i.%i.%i-%s" % sys.version_info[:4]
 
-__modules             = []
+__modules               = []
 
-__items               = []
+__items                 = []
 
-__routes              = {}
+__routes                = {}
 
-zabbix_module_path    = "/var/lib/zabbix/modules/python"
+zabbix_module_path      = "/var/lib/zabbix/modules/python"
 
-item_timeout          = 0
+item_timeout            = 0
 
 class AgentRequest:
   key    = None
@@ -61,15 +61,16 @@ def route(request):
   the request key.
   """
 
-  if not __routes[request.key]:
-    raise ValueException("no function mapped for key " + request.key)
+  try:
+    return __routes[request.key](request)
 
-  return __routes[request.key](request)
+  except KeyError:
+    raise ValueError("no function registered for agent item " + request.key)
 
 def version(request):
   """Agent item python.version returns the runtime version string"""
   
-  return python_version_string
+  return __python_version_string
 
 def register_item(item):
   __items.append(item)
@@ -78,6 +79,9 @@ def register_item(item):
   return item
 
 def register_module_items(mod):
+  if isinstance(mod, str):
+    mod = sys.modules[mod]
+
   try:
     newitems = mod.zbx_module_item_list()
     for item in newitems:
@@ -86,11 +90,16 @@ def register_module_items(mod):
   except AttributeError:
     pass
 
-  return __items
+  return newitems
 
-def register_module(mod_name):
+def register_module(mod):
   # import module
-  mod = __import__(mod_name)
+  if isinstance(mod, str):
+    if mod in sys.modules:
+      mod = sys.modules[mod]
+    else:
+      mod = __import__(mod)
+
   __modules.append(mod)
 
   # init module
@@ -116,11 +125,8 @@ def zbx_module_init():
     mod_name = os.path.basename(path)
     mod_name = mod_name[0:len(mod_name) - 3]
 
-    # skip self if it's in the same directory
-    if mod_name == "zabbix_module":
-      continue
-
-    register_module(mod_name)
+    if mod_name != __name__:
+      register_module(mod_name)
 
 def zbx_module_item_list():
   return __items

@@ -91,7 +91,15 @@ int PYTHON_MARSHAL(AGENT_REQUEST *request, AGENT_RESULT *result)
         goto out;
     }
 
-    SET_STR_RESULT(result, python_str(pyValue));
+    // cast uint64
+    if(1 == PyObject_TypeCheck(pyValue, &PyLong_Type)) {
+        SET_UI64_RESULT(result, PyLong_AsLongLong(pyValue));
+    } else if (1 == PyObject_TypeCheck(pyValue, &PyFloat_Type)) {
+        SET_DBL_RESULT(result, PyFloat_AsDouble(pyValue));
+    } else {
+        SET_STR_RESULT(result, python_str(pyValue));
+    }
+
     ret = SYSINFO_RET_OK;
 
 out:
