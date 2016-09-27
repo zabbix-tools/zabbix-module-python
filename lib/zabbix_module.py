@@ -8,9 +8,11 @@ python_version_string = "Python %i.%i.%i-%s" % sys.version_info[:4]
 
 zabbix_module_path    = "/var/lib/zabbix/modules/python"
 
-modules               = []
+__modules             = []
 
-routes                = {}
+__items               = []
+
+__routes              = {}
 
 class AgentRequest:
   key    = None
@@ -57,21 +59,57 @@ def route(request):
   the request key.
   """
 
-  if not routes[request.key]:
+  if not __routes[request.key]:
     raise ValueException("no function mapped for key " + request.key)
 
-  return routes[request.key](request)
+  return __routes[request.key](request)
 
 def version(request):
   """Agent item python.version returns the runtime version string"""
   
   return python_version_string
 
+def register_item(item):
+  __items.append(item)
+  __routes[item.key] = item.fn
+
+  return item
+
+def register_module_items(mod):
+  try:
+    newitems = mod.zbx_module_item_list()
+    for item in newitems:
+      register_item(item)
+
+  except AttributeError:
+    pass
+
+  return __items
+
+def register_module(mod_name):
+  # import module
+  mod = __import__(mod_name)
+  __modules.append(mod)
+
+  # init module
+  try:
+    mod.zbx_module_init()
+  except AttributeError:
+    pass
+
+  # register items
+  register_module_items(mod)
+
+  return mod
+
 def zbx_module_init():
   # ensure module path is in search path
   sys.path.insert(0, zabbix_module_path)
 
-  # load installed agent modules
+  # register builtin items
+  register_item(AgentItem("python.version", fn = version))
+
+  # register installed agent modules
   for path in glob.glob(zabbix_module_path + "/*.py"):
     mod_name = os.path.basename(path)
     mod_name = mod_name[0:len(mod_name) - 3]
@@ -80,31 +118,7 @@ def zbx_module_init():
     if mod_name == "zabbix_module":
       continue
 
-    # import module
-    mod = __import__(mod_name)
-    modules.append(mod)
-
-    # init module
-    try:
-      mod.zbx_module_init()
-    except AttributeError:
-      pass
+    register_module(mod_name)
 
 def zbx_module_item_list():
-  # add builtin items
-  items = [
-    AgentItem("python.version", fn = version),
-  ]
-
-  # iterate over installed modules
-  for mod in modules:
-    try:
-      items += mod.zbx_module_item_list()
-    except AttributeError:
-      pass
-
-  # add routes for imported module items
-  for item in items:
-    routes[item.key] = item.fn
-
-  return items
+  return __items
