@@ -4,15 +4,17 @@ import os.path
 
 __version__           = "1.0.0"
 
-python_version_string = "Python %i.%i.%i-%s" % sys.version_info[:4]
-
-zabbix_module_path    = "/var/lib/zabbix/modules/python"
+__python_version_string = "Python %i.%i.%i-%s" % sys.version_info[:4]
 
 __modules             = []
 
 __items               = []
 
 __routes              = {}
+
+zabbix_module_path    = "/var/lib/zabbix/modules/python"
+
+item_timeout          = 0
 
 class AgentRequest:
   key    = None

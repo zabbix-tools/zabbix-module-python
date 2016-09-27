@@ -7,13 +7,11 @@ PyObject    *pySysModule = NULL;
 PyObject    *pyAgentModule = NULL;
 PyObject    *pyRouterFunc = NULL;
 
-static char *python_version_string = NULL;
-
+/* pid that called zbx_module_init */
 pid_t init_pid = 0;
 
 // Required Zabbix module functions
 int         zbx_module_api_version()                { return ZBX_MODULE_API_VERSION; }
-void        zbx_module_item_timeout(int timeout)    { return; }
 ZBX_METRIC  *zbx_module_item_list()                 { return keys; }
 
 int  zbx_module_init() {
@@ -54,6 +52,12 @@ int  zbx_module_init() {
         return ZBX_MODULE_FAIL;
     }
 
+    // check item_timeout attribute
+    if (NULL == PyObject_GetAttrString(pyAgentModule, "item_timeout")) {
+        errorf(NULL, "attribute not found: " PYTHON_MODULE ".item_timeout");
+        return ZBX_MODULE_FAIL;
+    }
+
     // init builtin items
     keys = calloc(2, sizeof(ZBX_METRIC));
     keys[0].key = strdup("python.modver");
@@ -78,6 +82,21 @@ int zbx_module_uninit()
     Py_Finalize();
 
     return ZBX_MODULE_OK;
+}
+
+void zbx_module_item_timeout(int timeout)
+{
+    PyObject *pyValue = NULL;
+
+    if(NULL == (pyValue = PyLong_FromLong((long int) timeout))) {
+        perrorf(NULL, "cannot update item timeout");
+    } else {
+        if (-1 == PyObject_SetAttrString(pyAgentModule, "item_timeout", pyValue)) {
+            perrorf(NULL, "cannot update item timeout");
+        }
+
+        Py_DECREF(pyValue);
+    }
 }
 
 int zbx_metric_len(ZBX_METRIC *m)
