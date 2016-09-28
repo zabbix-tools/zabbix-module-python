@@ -22,29 +22,35 @@ zabbix_module_path      = "/var/lib/zabbix/modules/python"
 
 item_timeout            = 0
 
-def info(msg):
+# log levels from log.h
+LOG_LEVEL_CRIT          = 1
+LOG_LEVEL_ERR           = 2
+LOG_LEVEL_WARNING       = 3
+LOG_LEVEL_DEBUG         = 4
+LOG_LEVEL_TRACE         = 5
+LOG_LEVEL_INFORMATION   = 127
+
+def log(lvl, msg):
   if zabbix_runtime:
-    zabbix_runtime.log(127, msg)
+    zabbix_runtime.log(lvl, msg)
+
+def info(msg):
+  log(LOG_LEVEL_INFORMATION, msg)
 
 def trace(msg):
-  if zabbix_runtime:
-    zabbix_runtime.log(5, msg)
+  log(LOG_LEVEL_TRACE, msg)
 
 def debug(msg):
-  if zabbix_runtime:
-    zabbix_runtime.log(4, msg)
+  log(LOG_LEVEL_DEBUG, msg)
 
 def warning(msg):
-  if zabbix_runtime:
-    zabbix_runtime.log(3, msg)
+  log(LOG_LEVEL_WARNING, msg)
 
 def error(msg):
-  if zabbix_runtime:
-    zabbix_runtime.log(2, msg)
+  log(LOG_LEVEL_ERR, msg)
 
 def critical(msg):
-  if zabbix_runtime:
-    zabbix_runtime.log(1, msg)
+  log(LOG_LEVEL_CRIT, msg)
 
 class AgentRequest:
   key    = None
