@@ -84,11 +84,17 @@ def register_module_items(mod):
 
   try:
     newitems = mod.zbx_module_item_list()
-    for item in newitems:
-      register_item(item)
+
+    try:
+      for item in newitems:
+        register_item(item)
+    except TypeError:
+      # newitems is probably a single item
+      register_item(newitems)
 
   except AttributeError:
-    pass
+    # module does not define zbx_module_item_list
+    newitems = []
 
   return newitems
 
