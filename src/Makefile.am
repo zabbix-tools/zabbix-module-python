@@ -5,7 +5,8 @@ libzbxpython_la_SOURCES = \
 	libzbxpython.c \
 	log.c \
 	python.c \
-	route.c
+	route.c \
+	runtime.c
 
 libzbxpython_la_CFLAGS = \
 	$(DEBUG_CPPFLAGS) \

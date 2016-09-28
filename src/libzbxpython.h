@@ -43,6 +43,8 @@ int         perrorf(AGENT_RESULT *result, const char *format, ...);
 int         zbx_metric_len(ZBX_METRIC *m);
 ZBX_METRIC  *zbx_metric_merge(ZBX_METRIC *a, ZBX_METRIC *b);
 
+PyMODINIT_FUNC PyInit_zabbix_runtime(void);
+
 int         python_module_init(PyObject *pyModule);
 ZBX_METRIC  *python_module_item_list(PyObject *pyModule);
 char        *python_str(PyObject *pyValue);

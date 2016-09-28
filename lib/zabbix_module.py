@@ -2,6 +2,12 @@ import sys
 import glob
 import os.path
 
+# attempt to import zabbix runtime if running embedded
+try:
+  import zabbix_runtime
+except ImportError:
+  zabbix_runtime = None
+
 __version__             = "1.0.0"
 
 __python_version_string = "Python %i.%i.%i-%s" % sys.version_info[:4]
@@ -15,6 +21,30 @@ __routes                = {}
 zabbix_module_path      = "/var/lib/zabbix/modules/python"
 
 item_timeout            = 0
+
+def info(msg):
+  if zabbix_runtime:
+    zabbix_runtime.log(127, msg)
+
+def trace(msg):
+  if zabbix_runtime:
+    zabbix_runtime.log(5, msg)
+
+def debug(msg):
+  if zabbix_runtime:
+    zabbix_runtime.log(4, msg)
+
+def warning(msg):
+  if zabbix_runtime:
+    zabbix_runtime.log(3, msg)
+
+def error(msg):
+  if zabbix_runtime:
+    zabbix_runtime.log(2, msg)
+
+def critical(msg):
+  if zabbix_runtime:
+    zabbix_runtime.log(1, msg)
 
 class AgentRequest:
   key    = None
@@ -60,6 +90,8 @@ def route(request):
   Route a request from the Zabbix agent to the Python function associated with
   the request key.
   """
+
+  error("routing request {0} to python handler".format(request.key))
 
   try:
     return __routes[request.key](request)

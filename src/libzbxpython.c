@@ -22,6 +22,7 @@ int  zbx_module_init() {
     init_pid = getpid();
 
     // initialize python runtime
+    PyImport_AppendInittab("zabbix_runtime", PyInit_zabbix_runtime);
     Py_Initialize();
 
     // import python sys module
