@@ -91,7 +91,7 @@ def route(request):
   the request key.
   """
 
-  error("routing request {0} to python handler".format(request.key))
+  debug("routing python request: %s" % request.key)
 
   try:
     return __routes[request.key](request)
@@ -105,6 +105,7 @@ def version(request):
   return __python_version_string
 
 def register_item(item):
+  debug("registering item %s" % item.key)
   __items.append(item)
   __routes[item.key] = item.fn
 
@@ -114,6 +115,7 @@ def register_module_items(mod):
   if isinstance(mod, str):
     mod = sys.modules[mod]
 
+  debug("calling %s.zbx_module_item_list" % mod)
   try:
     newitems = mod.zbx_module_item_list()
 
@@ -132,16 +134,15 @@ def register_module_items(mod):
 
 def register_module(mod):
   # import module
+  debug("registering module: %s" % mod)
   if isinstance(mod, str):
-    if mod in sys.modules:
-      mod = sys.modules[mod]
-    else:
       mod = __import__(mod)
 
   __modules.append(mod)
 
   # init module
   try:
+    debug("calling %s.zbx_module_init")
     mod.zbx_module_init()
   except AttributeError:
     pass
@@ -159,12 +160,16 @@ def zbx_module_init():
   register_item(AgentItem("python.version", fn = version))
 
   # register installed agent modules
+  mod_names = []
   for path in glob.glob(zabbix_module_path + "/*.py"):
-    mod_name = os.path.basename(path)
-    mod_name = mod_name[0:len(mod_name) - 3]
+    filename = os.path.basename(path)
+    mod_name = filename[0:len(filename) - 3]
 
     if mod_name != __name__:
+      mod_names.append(filename)
       register_module(mod_name)
+
+  info("loaded python modules: %s" % ", ".join(mod_names))
 
 def zbx_module_item_list():
   return __items
