@@ -13,39 +13,6 @@ char *python_str(PyObject *pyValue)
     return buf;
 }
 
-int python_add_module_path(AGENT_RESULT *result, const char *path)
-{
-    int ret = SYSINFO_RET_FAIL;
-    PyObject *pyList, *pyFunc, *pyArgs;
-
-    pyList = PyObject_GetAttrString(pySysModule, "path");
-    if (NULL == pyList)
-        return perrorf(result, "unable to read sys.path");
-
-    pyFunc = PyObject_GetAttrString(pyList, "insert");
-    if (NULL == pyFunc)
-        return perrorf(result, "unable to find sys.path function");
-
-    pyArgs = PyTuple_New(2);
-    PyTuple_SetItem(pyArgs, 0, PyLong_FromLong(0));
-    PyTuple_SetItem(pyArgs, 1, PyUnicode_FromString("."));
-
-    PyObject_CallObject(pyFunc, pyArgs);
-    
-    if(NULL != PyErr_Occurred()) {
-        perrorf(result, "unable to append path to sys.path");
-    } else {
-        debugf("added directory to sys.path: %s", path);
-        ret = SYSINFO_RET_OK;
-    }
-
-    Py_DECREF(pyArgs);
-    Py_DECREF(pyFunc);
-    Py_DECREF(pyList);
-
-    return ret;
-}
-
 PyObject *python_import_module(AGENT_RESULT *result, const char *module)
 {
     PyObject *pyName = NULL;

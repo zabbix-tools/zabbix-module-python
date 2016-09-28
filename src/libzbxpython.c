@@ -14,7 +14,7 @@ pid_t init_pid = 0;
 int         zbx_module_api_version()                { return ZBX_MODULE_API_VERSION; }
 ZBX_METRIC  *zbx_module_item_list()                 { return keys; }
 
-int  zbx_module_init() {
+int zbx_module_init() {
     ZBX_METRIC  *m = NULL;
     PyObject    *pyValue = NULL;
 
@@ -28,9 +28,6 @@ int  zbx_module_init() {
     // import python sys module
     if(NULL == (pySysModule = python_import_module(NULL, "sys")))
         return ZBX_MODULE_FAIL;
-
-    // update python module search paths
-    python_add_module_path(NULL, ZABBIX_MODULE_PATH);
 
     // import python module for zabbix
     if(NULL == (pyAgentModule = python_import_module(NULL, PYTHON_MODULE)))

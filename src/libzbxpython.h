@@ -48,7 +48,6 @@ PyMODINIT_FUNC PyInit_zabbix_runtime(void);
 int         python_module_init(PyObject *pyModule);
 ZBX_METRIC  *python_module_item_list(PyObject *pyModule);
 char        *python_str(PyObject *pyValue);
-int         python_add_module_path(AGENT_RESULT *result, const char *path);
 PyObject    *python_import_module(AGENT_RESULT *result, const char *module);
 
 int         PYTHON_MARSHAL(AGENT_REQUEST *request, AGENT_RESULT *result);
