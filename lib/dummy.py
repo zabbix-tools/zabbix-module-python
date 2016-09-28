@@ -2,9 +2,15 @@ import zabbix_module
 import random
 
 def ping(request):
+  if len(request.params) != 0:
+    raise ValueError('Invalid number of parameters')
+
   return 1
 
 def echo(request):
+  if len(request.params) == 0:
+    raise ValueError('Invalid number of parameters')
+
   return " ".join(request.params)
 
 def rand(request):

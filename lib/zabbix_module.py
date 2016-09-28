@@ -34,6 +34,12 @@ def log(lvl, msg):
   if zabbix_runtime:
     zabbix_runtime.log(lvl, msg)
 
+  elif lvl == LOG_LEVEL_INFORMATION:
+    print(msg)
+
+  elif lvl <= LOG_LEVEL_WARNING:
+    sys.stderr.write(msg + "\n")
+
 def info(msg):
   log(LOG_LEVEL_INFORMATION, msg)
 
@@ -121,7 +127,7 @@ def register_module_items(mod):
   if isinstance(mod, str):
     mod = sys.modules[mod]
 
-  debug("calling %s.zbx_module_item_list" % mod)
+  debug("calling %s.zbx_module_item_list" % mod.__name__)
   try:
     newitems = mod.zbx_module_item_list()
 
@@ -148,7 +154,7 @@ def register_module(mod):
 
   # init module
   try:
-    debug("calling %s.zbx_module_init")
+    debug("calling %s.zbx_module_init" % mod.__name__)
     mod.zbx_module_init()
   except AttributeError:
     pass
@@ -175,7 +181,8 @@ def zbx_module_init():
       mod_names.append(filename)
       register_module(mod_name)
 
-  info("loaded python modules: %s" % ", ".join(mod_names))
+  if mod_names:
+    info("loaded python modules: %s" % ", ".join(mod_names))
 
 def zbx_module_item_list():
   return __items

@@ -1,13 +1,75 @@
 #include "libzbxpython.h"
 
+/* flag if python has initialized on this pid */
 static int ran_after_fork = 0;
 
-int PYTHON_MARSHAL(AGENT_REQUEST *request, AGENT_RESULT *result)
+/******************************************************************************
+ *                                                                            *
+ * Function: python_marshall_request                                          *
+ *                                                                            *
+ * Purpose: marshall a Zabbix AGENT_REQUEST C struct to a Python              *
+ *          zabbix_module.AgentRequest.                                       *
+ *                                                                            *
+ * Return value: (PyObject*) zabbix_module.Agentrequest                       *
+ *                                                                            *
+ ******************************************************************************/
+static PyObject*
+python_marshall_request(AGENT_REQUEST *request)
 {
-    int ret = SYSINFO_RET_FAIL;
+    PyObject *pyKey = NULL, *pyParams, *pyValue, *pyArgs, *pyRequestClass, *pyRequest;
+    int nparam;
 
-    PyObject *pyArgs, *pyRequestClass, *pyRequest, *pyValue, *pyKey, *pyParams;
-    int nparam, i;
+    // clear errors
+    PyErr_Clear();
+
+    // marshal request key
+    pyKey = PyUnicode_FromString(request->key);
+
+    // marshal each request param
+    nparam = get_rparams_num(request);
+    pyParams = PyList_New(nparam);
+    for(int i = 0; i < nparam; i++)
+        PyList_SetItem(pyParams, i, PyUnicode_FromString(get_rparam(request, i)));
+
+    // instanciate AgentRequest objecy
+    pyArgs = PyTuple_Pack(2, pyKey, pyParams);
+    pyRequestClass = PyObject_GetAttrString(pyAgentModule, "AgentRequest");
+    pyRequest = PyObject_CallObject(pyRequestClass, pyArgs);
+
+    // log any errors
+    python_log_error(NULL);
+
+    // clean up
+    if (pyKey)
+        Py_DECREF(pyKey);
+
+    if (pyRequestClass)
+        Py_DECREF(pyRequestClass);
+
+    if (pyArgs)
+        Py_DECREF(pyArgs);
+
+    if (pyParams)
+        Py_DECREF(pyParams);
+    
+    return pyRequest;
+}
+
+/******************************************************************************
+ *                                                                            *
+ * Function: PYTHON_ROUTER                                                    *
+ *                                                                            *
+ * Purpose: marshall a Zabbix AGENT_REQUEST C struct to a Python              *
+ *          zabbix_module.AgentRequest.                                       *
+ *                                                                            *
+ * Return value: (PyObject*) zabbix_module.Agentrequest                       *
+ *                                                                            *
+ ******************************************************************************/
+int PYTHON_ROUTER(AGENT_REQUEST *request, AGENT_RESULT *result)
+{
+    int         ret = SYSINFO_RET_FAIL;
+    int         nparam = 0, i = 0;
+    PyObject    *pyRequest = NULL, *pyArgs = NULL, *pyValue = NULL;
 
     /*
      * After zbx_module_init is called from the Zabbix agent it forks each of
@@ -18,97 +80,60 @@ int PYTHON_MARSHAL(AGENT_REQUEST *request, AGENT_RESULT *result)
      * Python runtime.
      */
     if (0 == ran_after_fork) {
-        if (getpid() != init_pid)
+        if (getpid() != init_pid) {
+            zabbix_log(LOG_LEVEL_DEBUG, "calling PyOS_AfterFork");
             PyOS_AfterFork();
+        }
 
         ran_after_fork = 1;
     }
 
-    // convert key to python string
-    if(NULL == (pyKey = PyUnicode_FromString(request->key))) {
-        perrorf(result, "unable to marshal request key to python");
-        goto out;
-    }
-
-    // convert params to python list
-    nparam = get_rparams_num(request);
-    if(NULL == (pyParams = PyList_New(nparam))) {
-        perrorf(result, "unable to create new python list");
-        goto out;
-    }
-
-    for(int i = 0; i < nparam; i++) {
-        if(NULL == (pyValue = PyUnicode_FromString(get_rparam(request, i)))) {
-            perrorf(result, "unable to marshal request parameter to python");
-            goto out;
-        }
-
-        if(-1 == PyList_SetItem(pyParams, i, pyValue)) {
-            perrorf(result, "unable to set python parameter value");
-            goto out;
-        }
-    }
-
-    // create init args for AgentRequest
-    if(NULL == (pyArgs = PyTuple_New(2))) {
-        perrorf(result, "unable to create args to marshal Agentrequest");
-        goto out;
-    }
-
-    if(-1 == (PyTuple_SetItem(pyArgs, 0, pyKey)) 
-        || -1 == (PyTuple_SetItem(pyArgs, 1, pyParams))) {
-        perrorf(result, "unable to set python arguments to marshal AgentRequest");
-        goto out;
-    }
-
-    // get "AgentRequest" class
-    if(NULL == (pyRequestClass = PyObject_GetAttrString(pyAgentModule, "AgentRequest"))) {
-        perrorf(result, "unable to fetch " PYTHON_MODULE ".AgentRequest class");
-        goto out;
-    }
-
-    // instanciate AgentRequest
-    if(NULL == (pyRequest = PyObject_CallObject(pyRequestClass, pyArgs))) {
-        perrorf(result, "unable to create new " PYTHON_MODULE ".AgentRequest");
+    // marshal agent request to python object
+    if(NULL == (pyRequest = python_marshall_request(request))) {
+        SET_MSG_RESULT(result, "cannot marshall agent request to python object");
         goto out;
     }
     
-    // create func args from AgentRequest
-    if(NULL == (pyArgs = PyTuple_New(1))) {
-        perrorf(result, "unable to create args for router function");
-        goto out;
-    }
+    // create func args for python router function
+    if (NULL == (pyArgs = PyTuple_Pack(1, pyRequest))) {
+        if(0 == python_log_error(result))
+            SET_MSG_RESULT(result, "cannot pack function arguments");
 
-    if(-1 == PyTuple_SetItem(pyArgs, 0, pyRequest)) {
-        perrorf(result, "unable to set python arguments for router function");
         goto out;
     }
 
     // call router function
-    // TODO: only send py error to zabbix
+    zabbix_log(LOG_LEVEL_DEBUG, "routing request to python module");
     if (NULL == (pyValue = PyObject_CallObject(pyRouterFunc, pyArgs))) {
-        perrorf(result, "error calling python function for key: %s", request->key);
+        if (0 == python_log_error(result))
+            SET_MSG_RESULT(result, "unknown error calling python router function");
+
         goto out;
     }
 
     // cast uint64
-    if(1 == PyObject_TypeCheck(pyValue, &PyLong_Type)) {
+    if(PyObject_TypeCheck(pyValue, &PyLong_Type)) {
+        zabbix_log(LOG_LEVEL_DEBUG, "casting result value as unsigned 64bit integer");
         SET_UI64_RESULT(result, PyLong_AsLongLong(pyValue));
-    } else if (1 == PyObject_TypeCheck(pyValue, &PyFloat_Type)) {
+    } else if (PyObject_TypeCheck(pyValue, &PyFloat_Type)) {
+        zabbix_log(LOG_LEVEL_DEBUG, "casting result value as double");
         SET_DBL_RESULT(result, PyFloat_AsDouble(pyValue));
     } else {
+        zabbix_log(LOG_LEVEL_DEBUG, "casting result value as string");
         SET_STR_RESULT(result, python_str(pyValue));
     }
 
     ret = SYSINFO_RET_OK;
 
 out:
-    if (pyArgs)         Py_DECREF(pyArgs);
-    if (pyRequestClass) Py_DECREF(pyRequestClass);
-    if (pyRequest)      Py_DECREF(pyRequest);
-    if (pyKey)          Py_DECREF(pyKey);
-    if (pyValue)        Py_DECREF(pyValue);
-    if (pyParams)       Py_DECREF(pyParams);
+    if (pyRequest)
+        Py_DECREF(pyRequest);
 
-    return SYSINFO_RET_OK;
+    if (pyArgs)
+        Py_DECREF(pyArgs);
+
+    if (pyValue)
+        Py_DECREF(pyValue);
+
+    return ret;
 }

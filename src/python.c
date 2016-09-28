@@ -1,6 +1,7 @@
 #include "libzbxpython.h"
 
-char *python_str(PyObject *pyValue)
+char *
+python_str(PyObject *pyValue)
 {
     char *buf = NULL;
     PyObject *pyStr = NULL;
@@ -13,7 +14,43 @@ char *python_str(PyObject *pyValue)
     return buf;
 }
 
-PyObject *python_import_module(AGENT_RESULT *result, const char *module)
+int
+python_log_error(AGENT_RESULT *result)
+{
+    if (PyErr_Occurred()) {
+        PyObject *pyType, *pyValue, *pyTraceback;
+        char *str;
+        
+        PyErr_Fetch(&pyType, &pyValue, &pyTraceback);
+
+        // log error description
+        if (NULL != (str = python_str(pyValue ? pyValue : pyType))) {
+            zabbix_log(LOG_LEVEL_ERR, str);
+
+            // set error message on result struct
+            if (NULL != result)
+                SET_MSG_RESULT(result, str);
+            else
+                free(str);
+        }
+
+        if (pyType)
+            Py_DECREF(pyType);
+        
+        if (pyValue)
+            Py_DECREF(pyValue);
+        
+        if (pyTraceback)
+            Py_DECREF(pyTraceback);
+
+        return 1;
+    }
+
+    return 0;
+}
+
+PyObject *
+python_import_module(const char *module)
 {
     PyObject *pyName = NULL;
     PyObject *pyModule = NULL;
@@ -22,13 +59,16 @@ PyObject *python_import_module(AGENT_RESULT *result, const char *module)
     pyModule = PyImport_Import(pyName);
     Py_DECREF(pyName);
 
-    if (NULL == pyModule)
-        perrorf(result, "cannot import module %s", module);
+    if (NULL == pyModule) {
+        zabbix_log(LOG_LEVEL_ERR, "cannot import module %s", module);
+        python_log_error(NULL);
+    }
 
     return pyModule;
 }
 
-int python_module_init(PyObject *pyModule)
+int
+python_module_init(PyObject *pyModule)
 {
     int ret = ZBX_MODULE_FAIL;
     PyObject *pyFunc;
@@ -37,11 +77,12 @@ int python_module_init(PyObject *pyModule)
 
     // check for zbx_module_item_list function in module
     if(NULL == (pyFunc = PyObject_GetAttrString(pyModule, "zbx_module_init")) || 0 == PyFunction_Check(pyFunc)) {
-        zabbix_log(LOG_LEVEL_INFORMATION, "function not found: %s.zbx_module_init", moduleName);
+        zabbix_log(LOG_LEVEL_DEBUG, "function not found: %s.zbx_module_init", moduleName);
     } else {
         // call function
         if(NULL == (PyObject_CallObject(pyFunc, NULL))) {
-            perrorf(NULL, "error calling %s.zbx_module_init", moduleName);
+            zabbix_log(LOG_LEVEL_ERR, "error calling %s.zbx_module_init", moduleName);
+            python_log_error(NULL);
         } else {
             ret = ZBX_MODULE_OK;
         }
@@ -52,7 +93,60 @@ int python_module_init(PyObject *pyModule)
     return ret;
 }
 
-ZBX_METRIC *python_module_item_list(PyObject *pyModule)
+/******************************************************************************
+ *                                                                            *
+ * Function: python_unmarshal_item                                            *
+ *                                                                            *
+ * Purpose: marshall a Python zabbix_module.AgentItem to a Zabbix ZBX_METRIC  *
+ *          C struct for use in zbx_module_item_list                          *
+ *                                                                            *
+ * Return value: pointer to a ZBX_METRIC struct                               *
+ *                                                                            *
+ ******************************************************************************/
+static ZBX_METRIC*
+python_unmarshal_item(PyObject *pyItem, ZBX_METRIC *item)
+{
+    PyObject *pyValue;
+
+    if (NULL == item)
+        item = (ZBX_METRIC*) calloc(1, sizeof(ZBX_METRIC));
+
+    // unmarshall key
+    if(pyValue = PyObject_GetAttrString(pyItem, "key")) {
+        item->key = PyUnicode_AsUTF8(pyValue);
+        Py_DECREF(pyValue);
+    }
+
+    // unmarshall flags
+    if(pyValue = PyObject_GetAttrString(pyItem, "flags")) {
+        item->flags = (int) PyLong_AsLong(pyValue) | CF_HAVEPARAMS;
+        Py_DECREF(pyValue);
+    }
+
+    // unmarshall test parameter
+    if(pyValue = PyObject_GetAttrString(pyItem, "test_param")) {
+        item->test_param = PyUnicode_AsUTF8(pyValue);
+        Py_DECREF(pyValue);
+    }
+
+    // always callback to the router function
+    item->function = PYTHON_ROUTER;
+
+    return item;
+}
+
+/******************************************************************************
+ *                                                                            *
+ * Function: python_module_item_list                                          *
+ *                                                                            *
+ * Purpose: call zbx_module_item_list in the given Python module and return   *
+ *          an array of unmarshaled ZBX_METRIC items                          *
+ *                                                                            *
+ * Return value: pointer to a ZBX_METRIC struct array                         *
+ *                                                                            *
+ ******************************************************************************/
+ZBX_METRIC *
+python_module_item_list(PyObject *pyModule)
 {
     ZBX_METRIC *keys = NULL, *item;
     PyObject *pyFunc, *pyKeys, *pyIter, *pyItem;
@@ -66,10 +160,12 @@ ZBX_METRIC *python_module_item_list(PyObject *pyModule)
     } else {
         // call function
         if(NULL == (pyKeys = PyObject_CallObject(pyFunc, NULL)) || !PyList_Check(pyKeys)) {
-            perrorf(NULL, "error calling %s.zbx_module_item_list", moduleName);
+            python_log_error(NULL);
+            zabbix_log(LOG_LEVEL_ERR, "error calling %s.zbx_module_item_list", moduleName);
         } else {
             if(NULL == (pyIter = PyObject_GetIter(pyKeys))) {
-                perrorf(NULL, "error iterating key list returned by %s.zbx_module_item_list", moduleName);
+                python_log_error(NULL);
+                zabbix_log(LOG_LEVEL_ERR, "error iterating key list returned by %s.zbx_module_item_list", moduleName);
             } else {
                 // alloc item list
                 keys_len = PyObject_Length(pyKeys);
@@ -78,28 +174,7 @@ ZBX_METRIC *python_module_item_list(PyObject *pyModule)
 
                 // marshall items
                 while (pyItem = PyIter_Next(pyIter)) {
-                    PyObject *pyValue;
-
-                    // TODO: validate AgentItem
-
-                    // marshall key
-                    pyValue = PyObject_GetAttrString(pyItem, "key");
-                    item->key = PyUnicode_AsUTF8(pyValue);
-                    Py_DECREF(pyValue);
-
-                    // marshall flags
-                    pyValue = PyObject_GetAttrString(pyItem, "key");
-                    item->flags = (int) PyLong_AsLong(pyValue);
-                    Py_DECREF(pyValue);
-
-                    // always callback to the marshaller function
-                    item->function = PYTHON_MARSHAL;
-
-                    // marshall test parameter
-                    pyValue = PyObject_GetAttrString(pyItem, "test_param");
-                    item->test_param = PyUnicode_AsUTF8(pyValue);
-                    Py_DECREF(pyValue);
-                    
+                    python_unmarshal_item(pyItem, item);                    
                     Py_DECREF(pyItem);
                     item++;
                 }

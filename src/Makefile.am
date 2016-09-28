@@ -3,7 +3,6 @@ lib_LTLIBRARIES = libzbxpython.la
 libzbxpython_la_SOURCES = \
 	libzbxpython.h \
 	libzbxpython.c \
-	log.c \
 	python.c \
 	route.c \
 	runtime.c

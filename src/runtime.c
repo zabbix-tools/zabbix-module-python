@@ -7,7 +7,7 @@ static PyObject *zabbix_runtime_log(PyObject *self, PyObject *args)
 	const char *str;
 
 	if(!PyArg_ParseTuple(args, "is", &level, &str)) {
-		perrorf(NULL, "logging error");
+		python_log_error(NULL);
 	} else {
 		zabbix_log(level, str);
 	}
