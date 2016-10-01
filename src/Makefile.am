@@ -18,9 +18,7 @@ python_la_LDFLAGS = \
 	-shared \
 	-module \
 	-avoid-version \
-	$(PYTHON_EXTRA_LDFLAGS) \
-	$(PYTHON_LIBS) \
-	$(PYTHON_EXTRA_LIBS)
+	$(PYTHON_LIBS)
 
 # prevent install of the redundant *.la files
 # and install module configuration
