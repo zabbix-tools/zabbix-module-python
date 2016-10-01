@@ -82,15 +82,11 @@ if test "x$PYTHON_CPPFLAGS" != "x"; then
   echo "    python:              ${PYTHON_CPPFLAGS}"
 fi
 
-echo "
-
-"
-
 echo
-echo "***********************************************************"
-echo "*                Now run '${am_make} install'                   *"
-echo "*                                                         *"
-echo "*           Thank you for using libzbxpython!             *"
-echo "*              <http://cavaliercoder.com>                 *"
-echo "***********************************************************"
+echo "************************************************************"
+echo "*                 Now run '${am_make} install'                   *"
+echo "*                                                          *"
+echo "*            Thank you for using libzbxpython!             *"
+echo "*               <http://cavaliercoder.com>                 *"
+echo "************************************************************"
 echo

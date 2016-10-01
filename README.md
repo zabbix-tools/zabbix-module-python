@@ -46,11 +46,14 @@ Why bother?
 
 This project is immature and pre-release.
 
-* Configure module sources with the location of Zabbix sources and the desired
-  target Python version:
+* Configure module sources with the desired Python version, the location of
+  Zabbix sources and the install location of the Zabbix configuration directory
 
   ```
-  $ PYTHON_VERSION=3.4 ./configure --with-zabbix=/usr/src/zabbix-3.2.0
+  $ PYTHON_VERSION=3 ./configure \
+                        --libdir=/usr/lib/zabbix/modules \
+                        --with-zabbix=/usr/src/zabbix-3.2.0 \
+                        --with-zabbix-conf=/etc/zabbix
   ```
 
 * Compile the module binary
