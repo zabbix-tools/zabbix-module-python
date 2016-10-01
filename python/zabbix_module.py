@@ -1,6 +1,8 @@
 import sys
 import glob
 import os.path
+from re import sub
+from json import JSONEncoder
 
 # attempt to import zabbix runtime if running embedded
 try:
@@ -115,6 +117,30 @@ def version(request):
   """Agent item python.version returns the runtime version string"""
   
   return __python_version_string
+
+def macro_name(key):
+  """Converts a string into a Zabbix LLD macro"""
+
+  macro = sub(r'[\s_-]+', '_', key)       # replace whitespace with underscore
+  macro = sub(r'[^a-zA-Z_]+', '', macro)  # strip illegal chars
+  macro = sub(r'[_]+', '_', macro)        # reduce duplicates
+  macro = ('{#' + macro + '}').upper()    # encapsulate in {#}
+
+  return macro
+
+def discovery(data):
+  """Converts a Python dict into a Zabbix LLD JSON string"""
+  out = { 'data': [] }
+  for item in data:
+    out_item = {}
+    for key, val in item.items():
+      if val:
+        out_item[macro_name(key)] = val
+
+    if out_item:
+      out['data'].append(out_item)
+
+  return JSONEncoder().encode(out)
 
 def register_item(item):
   debug("registering item %s" % item.key)

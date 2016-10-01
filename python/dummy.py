@@ -33,6 +33,15 @@ def rand(request):
 
   return random.randrange(l, u)
 
+def discovery(request):
+  """agent item python.discovery[...]"""
+
+  data = []
+  for param in request.params:
+    data.append({ 'param': param })
+
+  return zabbix_module.discovery(data)
+
 def zbx_module_init():
   """initialize this module"""
 
@@ -43,7 +52,8 @@ def zbx_module_item_list():
   """register available module items"""
 
   return [
-    zabbix_module.AgentItem("python.ping",   fn = ping),
-    zabbix_module.AgentItem("python.echo",   fn = echo, test_param = [ 'hello', 'world' ]),
-    zabbix_module.AgentItem("python.random", fn = rand, test_param = [ 1, 1000 ]),
+    zabbix_module.AgentItem("python.ping",      fn = ping),
+    zabbix_module.AgentItem("python.echo",      fn = echo,      test_param = [ 'hello', 'world' ]),
+    zabbix_module.AgentItem("python.random",    fn = rand,      test_param = [ 1, 1000 ]),
+    zabbix_module.AgentItem("python.discovery", fn = discovery, test_param = [ 'lorem', 'ipsum', 'dolar' ]),
   ]
