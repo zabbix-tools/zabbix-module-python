@@ -42,6 +42,18 @@ Why bother?
   is much simpler in a long lived, shared library context than in on-demand
   script calls
 
+
+## Requirements
+
+This project is immature and pre-release. 
+
+For now, testing has only been completed with the following prerequisites:
+
+* Debian Jessie
+* Zabbix Agent v3.2
+* Python v3.4
+
+
 ## Installation
 
 This project is immature and pre-release. 
@@ -70,6 +82,68 @@ Download [source tarball here](http://s3.cavaliercoder.com/libzbxpython/libzbxpy
   $ make install
   ```
 
+## Usage
+
+See `dummy.py` for a fully functioning example.
+
+* Python modules need to be installed in a `python` subdirectory of the Zabbix
+  module directory (default: `/usr/lib/zabbix/modules/python3`)
+
+* Start your Python module with `import zabbix_module`
+
+* If you need to initialize any globals or threads before Zabbix forks, you may
+  do this by implementing `zbx_module_init`:
+
+  ```python
+  def zbx_module_init():
+    zabbix_module.info("Initalized my module")
+  ```
+
+* Create handler functions for each item you wish to create. These funtions
+  should accept a single `request` parameter and must return either a positive
+  integer, a double or a string with less than 255 characters
+
+  ```python
+  def my_handler(request):
+    return 'hello world'
+  ```
+
+  The `request` parameter is an `AgentRequest` object and exposes the requested
+  key and parameters.
+
+* Register your item handlers by implementing `zbx_module_item_list`
+
+  ```python
+  def zbx_module_item_list():
+    return [
+      zabbix_module.AgentItem("my.item", fn = my_handler)
+    ]
+  ```
+
+* For discovery rules, wrap the return value of your handler function as
+  follows:
+
+  ```python
+  return zabbix_module.discovery(value)
+  ```
+
+* To send an error to Zabbix, simply raise an exception:
+  
+  ```python
+  def my_handler(request):
+    raise ValueError('Something went wrong')
+  ```
+
+* You can log messages to the Zabbix log file using any of the following
+  functions: `trace`, `debug`, `info`, `warning`, `error` or `critical`
+
+  ```python
+  def my_hander(request):
+    info('Received request %s[%s]' % request.key, ','.join(request.params))
+
+    return 1
+
+  ```
 
 ## License
 
