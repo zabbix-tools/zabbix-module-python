@@ -4,7 +4,7 @@ Embedded Python interpreter module for Zabbix.
 
 This [native Zabbix module](https://www.zabbix.com/documentation/3.2/manual/config/items/loadablemodules)
 allows you to write extensions for Zabbix in Python and run them embedded in the
-Zabbix agent or server.
+Zabbix agent, server or proxy.
 
 Why bother?
 

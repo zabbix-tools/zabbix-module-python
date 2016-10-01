@@ -59,6 +59,7 @@ dnl
 AC_CONFIG_FILES([
  Makefile
  src/Makefile
+ python/Makefile
 ])
 AC_OUTPUT
 
@@ -66,8 +67,11 @@ echo "
 Configuration:
 
   Detected OS:           ${host_os}
-  Install path:          ${libdir}
-  Python Module path:    ${ZABBIX_PYTHON_MODULE_PATH}
+  Module install path:   ${libdir}
+
+  Python version:        ${PYTHON_VERSION}
+  Python package path:   ${PYTHON_SITE_PKG}
+  Python module path:    ${ZABBIX_PYTHON_MODULE_PATH}
 
   Compiler:              ${CC}
   Compiler flags:        ${CFLAGS}

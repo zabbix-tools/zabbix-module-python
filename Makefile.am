@@ -1,9 +1,13 @@
+export PYTHON_VERSION
+
 ACLOCAL_AMFLAGS = -Im4
 
 SUBDIRS = \
-	src
+	src \
+	python
 
 EXTRA_DIST = \
 	README.md \
-	lib/dummy.py \
-	lib/zabbix_module.py
+	python/dummy.py \
+	python/setup.py \
+	python/zabbix_module/__init__.py
