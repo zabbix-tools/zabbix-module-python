@@ -1,5 +1,3 @@
-MODNAME = "python$(PYTHON_VERSION)"
-
 lib_LTLIBRARIES = python.la
 
 python_la_SOURCES = \
@@ -21,14 +19,14 @@ python_la_LDFLAGS = \
 	$(PYTHON_LIBS)
 
 # prevent install of the redundant *.la files
-# and install module configuration
-install-exec-hook: agent-config
+# and rename module to include python version
+install-exec-hook: install-agent-config
 	rm -f $(DESTDIR)$(libdir)/python.la
 	mv -f $(DESTDIR)$(libdir)/python.so \
 		$(DESTDIR)$(libdir)/python$(PYTHON_VERSION).so
 
 # install agent module configuration file
-agent-config:
+install-agent-config:
 	$(MKDIR_P) $(DESTDIR)$(ZABBIX_CONFIG_PATH)/zabbix_agentd.d
 	echo "LoadModule=python$(PYTHON_VERSION).so" > \
 		$(DESTDIR)$(ZABBIX_CONFIG_PATH)/zabbix_agentd.d/python$(PYTHON_VERSION).conf
