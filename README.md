@@ -120,11 +120,12 @@ See `dummy.py` for a fully functioning example.
     ]
   ```
 
-* For discovery rules, wrap the return value of your handler function as
-  follows:
+* For discovery rules, convert a `dict` into a JSON discovery string using
+  the `discovery` function:
 
   ```python
-  return zabbix_module.discovery(value)
+  def my_handler(request):
+    return zabbix_module.discovery( [ { 'id': 1 }, { 'id': 2 } ] )
   ```
 
 * To send an error to Zabbix, simply raise an exception:
@@ -139,7 +140,7 @@ See `dummy.py` for a fully functioning example.
 
   ```python
   def my_hander(request):
-    info('Received request %s[%s]' % request.key, ','.join(request.params))
+    zabbix_modue.info('Received request %s[%s]' % request.key, ','.join(request.params))
 
     return 1
 
