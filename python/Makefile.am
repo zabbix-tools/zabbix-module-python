@@ -1,19 +1,15 @@
-all: build-zabbix-module
+EXTRA_DIST = \
+	dummy.py \
+	zabbix_module.py
 
-clean-local: clean-zabbix-module
+all:
 
 install-exec-local: install-zabbix-module install-dummy-module
 
-build-zabbix-module:
-	$(PYTHON) setup.py build -v
-
-clean-zabbix-module:
-	rm -rf build/ dist/ zabbix_module.egg-info/
-
 install-zabbix-module:
-	$(PYTHON) setup.py install \
-		--install-lib=$(PYTHON_SITE_PKG)
+	$(MKDIR_P) $(DESTDIR)$(PYTHON_SITE_PKG)
+	$(INSTALL_DATA) zabbix_module.py $(DESTDIR)$(PYTHON_SITE_PKG)/zabbix_module.py
 
 install-dummy-module:
-	$(MKDIR_P) $(ZABBIX_PYTHON_MODULE_PATH)
-	$(INSTALL_DATA) dummy.py $(ZABBIX_PYTHON_MODULE_PATH)/dummy.py
+	$(MKDIR_P) $(DESTDIR)$(ZABBIX_PYTHON_MODULE_PATH)
+	$(INSTALL_DATA) dummy.py $(DESTDIR)$(ZABBIX_PYTHON_MODULE_PATH)/dummy.py
