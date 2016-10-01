@@ -165,14 +165,23 @@ def register_module(mod):
   return mod
 
 def zbx_module_init():
+  mod_names = []
+  
   # ensure module path is in search path
   sys.path.insert(0, zabbix_module_path)
 
   # register builtin items
   register_item(AgentItem("python.version", fn = version))
 
+  # register installed agent packages
+  for path in glob.glob(zabbix_module_path + "/*/__init__.py"):
+    mod_name = os.path.basename(os.path.split(path)[0])
+
+    if mod_name != __name__:
+      mod_names.append(mod_name)
+      register_module(mod_name)
+
   # register installed agent modules
-  mod_names = []
   for path in glob.glob(zabbix_module_path + "/*.py"):
     filename = os.path.basename(path)
     mod_name = filename[0:len(filename) - 3]
@@ -181,6 +190,7 @@ def zbx_module_init():
       mod_names.append(filename)
       register_module(mod_name)
 
+  # log loaded modules
   if mod_names:
     info("loaded python modules: %s" % ", ".join(mod_names))
 
