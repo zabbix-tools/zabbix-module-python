@@ -26,15 +26,16 @@ python_marshall_request(AGENT_REQUEST *request)
     pyKey = PyUnicode_FromString(request->key);
 
     // marshal each request param
-    nparam = get_rparams_num(request);
+    nparam   = get_rparams_num(request);
     pyParams = PyList_New(nparam);
+    
     for(int i = 0; i < nparam; i++)
         PyList_SetItem(pyParams, i, PyUnicode_FromString(get_rparam(request, i)));
 
     // instanciate AgentRequest objecy
-    pyArgs = PyTuple_Pack(2, pyKey, pyParams);
+    pyArgs         = PyTuple_Pack(2, pyKey, pyParams);
     pyRequestClass = PyObject_GetAttrString(pyAgentModule, "AgentRequest");
-    pyRequest = PyObject_CallObject(pyRequestClass, pyArgs);
+    pyRequest      = PyObject_CallObject(pyRequestClass, pyArgs);
 
     // log any errors
     python_log_error(NULL);

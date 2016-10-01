@@ -1,28 +1,36 @@
-lib_LTLIBRARIES = libzbxpython.la
+MODNAME = "python$(PYTHON_VERSION)"
 
-libzbxpython_la_SOURCES = \
+lib_LTLIBRARIES = python.la
+
+python_la_SOURCES = \
 	libzbxpython.h \
 	libzbxpython.c \
 	python.c \
 	route.c \
 	runtime.c
 
-libzbxpython_la_CFLAGS = \
+python_la_CFLAGS = \
 	$(DEBUG_CPPFLAGS) \
 	$(ZABBIX_CPPFLAGS) \
 	$(PYTHON_CPPFLAGS)
 
-libzbxpython_la_LDFLAGS = \
+python_la_LDFLAGS = \
 	-shared \
+	-module \
 	-avoid-version \
 	$(PYTHON_EXTRA_LDFLAGS) \
 	$(PYTHON_LIBS) \
 	$(PYTHON_EXTRA_LIBS)
 
-# Prevent install of the redundant *.la files
-install-exec-hook:
-	rm -f $(DESTDIR)$(libdir)/libzbxpython.la
+# prevent install of the redundant *.la files
+# and install module configuration
+install-exec-hook: agent-config
+	rm -f $(DESTDIR)$(libdir)/python.la
+	mv -f $(DESTDIR)$(libdir)/python.so \
+		$(DESTDIR)$(libdir)/python$(PYTHON_VERSION).so
 
-# Fix "files left after uninstall" issue
-uninstall-local:
-	rm -f $(DESTDIR)$(libdir)/libzbxpython.so
+# install agent module configuration file
+agent-config:
+	$(MKDIR_P) $(DESTDIR)$(ZABBIX_CONFIG_PATH)/zabbix_agentd.d
+	echo "LoadModule=python$(PYTHON_VERSION).so" > \
+		$(DESTDIR)$(ZABBIX_CONFIG_PATH)/zabbix_agentd.d/python$(PYTHON_VERSION).conf

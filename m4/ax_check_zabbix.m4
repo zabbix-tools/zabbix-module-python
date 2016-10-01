@@ -1,13 +1,13 @@
 #
 # SYNOPSIS
 #
-#   AX_LIB_ZABBIX
+#   AX_CHECK_ZABBIX
 #
 # DESCRIPTION
 #
 #   This macro provides tests of availability of Zabbix source headers.
 #
-#   AX_LIB_ZABBIX macro takes no arguments.
+#   AX_CHECK_ZABBIX macro takes no arguments.
 #
 #   The --with-zabbix option takes one of three possible values:
 #
@@ -37,13 +37,17 @@
 
 #serial 1
 
-AC_DEFUN([AX_LIB_ZABBIX],
+AC_DEFUN([AX_CHECK_ZABBIX],
 [
-    ZABBIX_HEADERS="/usr/src/zabbix/include"
+    ZABBIX_HEADERS="/usr/src/zabbix"
+    ZABBIX_CPPFLAGS=""
 
+    dnl
+    dnl Configure Zabbix header path
+    dnl
     AC_ARG_WITH([zabbix],
-        AS_HELP_STRING([--with-zabbix=@<:@ARG@:>@],
-            [use Zabbix headers @<:@default=/usr/src/zabbix/include@:>@, optionally specify path to Zabbix source headers]
+        AS_HELP_STRING([--with-zabbix=DIR],
+            [search for Zabbix headers @<:@/usr/src/zabbix@:>@]
         ),
         [
         if test "$withval" = "no"; then
@@ -58,12 +62,9 @@ AC_DEFUN([AX_LIB_ZABBIX],
         [want_zabbix="yes"]
     )
 
-    ZABBIX_CPPFLAGS=""
-
     dnl
     dnl Check Zabbix headers
     dnl
-
     if test "$want_zabbix" = "yes"; then        
         AC_MSG_CHECKING([for Zabbix header files])
 
@@ -75,7 +76,7 @@ AC_DEFUN([AX_LIB_ZABBIX],
                 found_zabbix="no"
                 AC_MSG_RESULT([no])
 
-                AC_MSG_ERROR([$ZABBIX_HEADERS/module.h does not exist])
+                AC_MSG_ERROR([$ZABBIX_HEADERS/include/module.h does not exist])
                 ZABBIX_HEADERS="no"
             fi
         fi
@@ -90,6 +91,6 @@ AC_DEFUN([AX_LIB_ZABBIX],
         fi
     fi
 
-    AC_SUBST([ZABBIX_CPPFLAGS])
     AC_SUBST([ZABBIX_HEADERS])
+    AC_SUBST([ZABBIX_CPPFLAGS])
 ])

@@ -18,7 +18,7 @@ __items                 = []
 
 __routes                = {}
 
-zabbix_module_path      = "/var/lib/zabbix/modules/python"
+zabbix_module_path      = "/usr/lib/zabbix/modules/python%i" % sys.version_info[:1]
 
 item_timeout            = 0
 

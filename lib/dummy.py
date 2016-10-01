@@ -4,7 +4,7 @@ import zabbix_module
 import random
 
 def ping(request):
-  """agent item python.ping"""
+  """agent item python.ping[]"""
 
   if len(request.params) != 0:
     raise ValueError('Invalid number of parameters')
@@ -12,7 +12,7 @@ def ping(request):
   return 1
 
 def echo(request):
-  """agent item python.echo[...]"""
+  """agent item python.echo[msg, ...]"""
 
   if len(request.params) == 0:
     raise ValueError('Invalid number of parameters')
@@ -20,7 +20,7 @@ def echo(request):
   return " ".join(request.params)
 
 def rand(request):
-  """agent item python.random[lower,upper]"""
+  """agent item python.random[lower, upper]"""
 
   if len(request.params) != 2:
     raise ValueError('Invalid number of parameters')

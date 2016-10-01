@@ -88,7 +88,7 @@ int zbx_module_init() {
         return ZBX_MODULE_FAIL;
 
     // advise python module of agent module load path
-    pyValue = PyUnicode_FromString(ZABBIX_MODULE_PATH);
+    pyValue = PyUnicode_FromString(ZABBIX_PYTHON_MODULE_PATH);
     PyObject_SetAttrString(pyAgentModule, "zabbix_module_path", pyValue);
     Py_DECREF(pyValue);
 
