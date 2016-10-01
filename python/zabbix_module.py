@@ -68,6 +68,9 @@ class AgentRequest:
     self.key = key
     self.params = params
 
+  def __str__(self):
+    return "{0}[{1}]".format(self.key, ','.join(self.params))
+
 class AgentItem:
   key        = None
   flags      = 0

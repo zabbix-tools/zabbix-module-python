@@ -140,7 +140,7 @@ See `dummy.py` for a fully functioning example.
 
   ```python
   def my_hander(request):
-    zabbix_modue.info('Received request %s[%s]' % request.key, ','.join(request.params))
+    zabbix_module.info("Received request {0}".format(request))
 
     return 1
 
