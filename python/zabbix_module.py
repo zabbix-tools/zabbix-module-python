@@ -121,15 +121,17 @@ def version(request):
 def macro_name(key):
   """Converts a string into a Zabbix LLD macro"""
 
-  macro = sub(r'[\s_-]+', '_', key)       # replace whitespace with underscore
+  macro = key.upper()                     # uppercase
+  macro = sub(r'[\s_-]+', '_', macro)     # replace whitespace with underscore
   macro = sub(r'[^a-zA-Z_]+', '', macro)  # strip illegal chars
   macro = sub(r'[_]+', '_', macro)        # reduce duplicates
-  macro = ('{#' + macro + '}').upper()    # encapsulate in {#}
+  macro = ('{#' + macro + '}')            # encapsulate in {#}
 
   return macro
 
 def discovery(data):
   """Converts a Python dict into a Zabbix LLD JSON string"""
+
   out = { 'data': [] }
   for item in data:
     out_item = {}
@@ -143,6 +145,8 @@ def discovery(data):
   return JSONEncoder().encode(out)
 
 def register_item(item):
+  """Registers an AgentItem for use in the parent Zabbix process"""
+
   debug("registering item %s" % item.key)
   __items.append(item)
   __routes[item.key] = item.fn
@@ -150,6 +154,11 @@ def register_item(item):
   return item
 
 def register_module_items(mod):
+  """
+  Retrieves a list of AgentItems by calling zbx_module_item_list in the given
+  module, if it exists. Each item is then registered for use in the parent
+  Zabbix process.
+  """
   if isinstance(mod, str):
     mod = sys.modules[mod]
 
@@ -171,6 +180,12 @@ def register_module_items(mod):
   return newitems
 
 def register_module(mod):
+  """
+  Initializes the given module by calling its zbx_module_init function, if it
+  exists. Any AgentItems in the module are then registered via
+  register_module_items.
+  """
+
   # import module
   debug("registering module: %s" % mod)
   if isinstance(mod, str):
@@ -191,6 +206,11 @@ def register_module(mod):
   return mod
 
 def zbx_module_init():
+  """
+  This function is called by the Zabbix runtime when the module is first loaded.
+  It initializes and registers builtin AgentItems and all modules from the
+  configured zabbix_module_path.
+  """
   mod_names = []
   
   # ensure module path is in search path
@@ -221,4 +241,9 @@ def zbx_module_init():
     info("loaded python modules: %s" % ", ".join(mod_names))
 
 def zbx_module_item_list():
+  """
+  This function is called by the Zabbix runtime and returns all registered
+  AgentItems for use in the parent Zabbix process.
+  """
+  
   return __items
