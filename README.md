@@ -44,7 +44,9 @@ Why bother?
 
 ## Installation
 
-This project is immature and pre-release.
+This project is immature and pre-release. 
+
+Download [source tarball here](http://s3.cavaliercoder.com/libzbxpython/libzbxpython-1.0.0.tar.gz).
 
 * Configure module sources with the desired Python version, the location of
   Zabbix sources and the install location of the Zabbix configuration directory
