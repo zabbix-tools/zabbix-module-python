@@ -135,7 +135,7 @@ def discovery(data):
     out_item = {}
     for key, val in item.items():
       if val:
-        out_item[macro_name(key)] = val
+        out_item[macro_name(key)] = str(val)
 
     if out_item:
       out['data'].append(out_item)
