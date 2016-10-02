@@ -90,7 +90,8 @@ class AgentItem:
         for i, v in enumerate(test_param):
           test_param[i] = str(v)
 
-        test_param = ",".join(test_param)
+        test_param = ','.join(test_param)
+
       except TypeError:
         test_param = str(test_param)
 
@@ -108,7 +109,7 @@ def route(request):
   the request key.
   """
 
-  debug("routing python request: %s" % request.key)
+  debug("routing python request: %s" % request)
 
   try:
     return __routes[request.key](request)
@@ -135,17 +136,17 @@ def macro_name(key):
 def discovery(data):
   """Converts a Python dict into a Zabbix LLD JSON string"""
 
-  out = { 'data': [] }
+  lld_data = { 'data': [] }
   for item in data:
-    out_item = {}
+    lld_item = {}
     for key, val in item.items():
       if val:
-        out_item[macro_name(key)] = str(val)
+        lld_item[macro_name(key)] = str(val)
 
-    if out_item:
-      out['data'].append(out_item)
+    if lld_item:
+      lld_data['data'].append(lld_item)
 
-  return JSONEncoder().encode(out)
+  return JSONEncoder().encode(lld_data)
 
 def register_item(item):
   """Registers an AgentItem for use in the parent Zabbix process"""

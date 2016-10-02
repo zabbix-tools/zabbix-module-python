@@ -1,24 +1,32 @@
 #include "libzbxpython.h"
 
-// Define custom keys
+/* Define custom keys */
 static ZBX_METRIC  *keys = NULL;
 
+/* Python sys module */
 PyObject    *pySysModule = NULL;
+
+/* Python complimentary module (zabbix_module) */
 PyObject    *pyAgentModule = NULL;
+
+/* Python router function (zabbix_module.route) */
 PyObject    *pyRouterFunc = NULL;
 
 /* pid that called zbx_module_init */
 pid_t init_pid = 0;
 
-/*
- * Custom key: python.modver
- *
- * Returns the version string of the libzbxpython module.
- *
- * Parameters:
- *
- * Returns: s
- */
+/******************************************************************************
+ *                                                                            *
+ * Function: PYTHON_MODVER                                                    *
+ *                                                                            *
+ * Purpose: Item key python.modver                                            *
+ *          Returns the version string of this module.                        *
+ *                                                                            *
+ * Parameters: None                                                           *
+ *                                                                            *
+ * Return value: s                                                            *
+ *                                                                            *
+ ******************************************************************************/
 static int 
 PYTHON_MODVER(AGENT_REQUEST *request, AGENT_RESULT *result)
 {
@@ -26,6 +34,18 @@ PYTHON_MODVER(AGENT_REQUEST *request, AGENT_RESULT *result)
     return SYSINFO_RET_OK;
 }
 
+/******************************************************************************
+ *                                                                            *
+ * Function: zbx_metric_len                                                   *
+ *                                                                            *
+ * Purpose: Returns the number of items in a ZBX_METRIC array, not including  *
+ *          the NULL terminator.                                              *
+ *                                                                            *
+ * Parameters: m - list of items supported by a module                        *
+ *                                                                            *
+ * Return value: (int)                                                        *
+ *                                                                            *
+ ******************************************************************************/
 static int
 zbx_metric_len(ZBX_METRIC *m)
 {
@@ -38,8 +58,21 @@ zbx_metric_len(ZBX_METRIC *m)
     return count;
 }
 
+/******************************************************************************
+ *                                                                            *
+ * Function: zbx_metric_concat                                                *
+ *                                                                            *
+ * Purpose: Concatenates two ZBX_METRIC arrays into a newly allocated         *
+ *          array with shallow copies of the original metrics.                *
+ *                                                                            *
+ *          It is the caller's repsonsibility to free the returned            *
+ *          reference.                                                        *
+ *                                                                            *
+ * Return value: (ZBX_METRIC*)                                                *
+ *                                                                            *
+ ******************************************************************************/
 static ZBX_METRIC
-*zbx_metric_merge(ZBX_METRIC *a, ZBX_METRIC *b) 
+*zbx_metric_concat(ZBX_METRIC *a, ZBX_METRIC *b) 
 {
     int len_a;
     int len_b;
@@ -58,9 +91,6 @@ static ZBX_METRIC
     for(p_b = b; p_b && p_b->key; p_b++)
         (*p_m++) = *p_b;
 
-    free(a);
-    free(b);
-
     return m;
 }
 
@@ -69,7 +99,7 @@ int         zbx_module_api_version()                { return ZBX_MODULE_API_VERS
 ZBX_METRIC  *zbx_module_item_list()                 { return keys; }
 
 int zbx_module_init() {
-    ZBX_METRIC  *m = NULL;
+    ZBX_METRIC  *m = NULL, *n = NULL;
     PyObject    *pyValue = NULL;
 
     // cache initialization process pid for managing forks later
@@ -111,17 +141,20 @@ int zbx_module_init() {
     }
 
     // init builtin items
-    keys = calloc(2, sizeof(ZBX_METRIC));
-    keys[0].key = strdup("python.modver");
-    keys[0].function = PYTHON_MODVER;
+    m = calloc(2, sizeof(ZBX_METRIC));
+    m->key = strdup("python.modver");
+    m->function = PYTHON_MODVER;
 
     // init items from zabbix_module python module
-    if(NULL == (m = python_module_item_list(pyAgentModule))) {
+    if(NULL == (n = python_module_item_list(pyAgentModule))) {
         zabbix_log(LOG_LEVEL_ERR, "cannot read item list from " PYTHON_MODULE " python module");    
         return ZBX_MODULE_FAIL;
     }
-     
-    keys = zbx_metric_merge(keys, m);
+    
+    // merge builtin in modular items
+    keys = zbx_metric_concat(m, n);
+    free(m);
+    free(n);
 
     return ZBX_MODULE_OK; 
 }

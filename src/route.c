@@ -60,13 +60,14 @@ python_marshall_request(AGENT_REQUEST *request)
  *                                                                            *
  * Function: PYTHON_ROUTER                                                    *
  *                                                                            *
- * Purpose: marshall a Zabbix AGENT_REQUEST C struct to a Python              *
- *          zabbix_module.AgentRequest.                                       *
+ * Purpose: marshall a Zabbix agent request to its registered Python handler  *
+ *          via call to zabbix_module.route                                   *
  *                                                                            *
- * Return value: (PyObject*) zabbix_module.Agentrequest                       *
+ * Return value: SYSINFO_RET_FAIL | SYSINFO_RET_OK                            *
  *                                                                            *
  ******************************************************************************/
-int PYTHON_ROUTER(AGENT_REQUEST *request, AGENT_RESULT *result)
+int
+PYTHON_ROUTER(AGENT_REQUEST *request, AGENT_RESULT *result)
 {
     int         ret = SYSINFO_RET_FAIL;
     int         nparam = 0, i = 0;
@@ -112,16 +113,16 @@ int PYTHON_ROUTER(AGENT_REQUEST *request, AGENT_RESULT *result)
         goto out;
     }
 
-    // cast uint64
+    // unmarshall Python value to a Zabbix return value
     if(PyObject_TypeCheck(pyValue, &PyLong_Type)) {
-        zabbix_log(LOG_LEVEL_DEBUG, "casting result value as unsigned 64bit integer");
+        zabbix_log(LOG_LEVEL_DEBUG, "unmarshalling result value as unsigned 64bit integer");
         SET_UI64_RESULT(result, PyLong_AsLongLong(pyValue));
     } else if (PyObject_TypeCheck(pyValue, &PyFloat_Type)) {
-        zabbix_log(LOG_LEVEL_DEBUG, "casting result value as double");
+        zabbix_log(LOG_LEVEL_DEBUG, "unmarshalling result value as double");
         SET_DBL_RESULT(result, PyFloat_AsDouble(pyValue));
     } else {
-        zabbix_log(LOG_LEVEL_DEBUG, "casting result value as string");
-        SET_STR_RESULT(result, python_str(pyValue));
+        zabbix_log(LOG_LEVEL_DEBUG, "unmarshalling result value as string");
+        SET_STR_RESULT(result, python_str(pyValue)); /* zabbix will free */
     }
 
     ret = SYSINFO_RET_OK;

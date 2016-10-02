@@ -1,5 +1,16 @@
 #include "libzbxpython.h"
 
+/******************************************************************************
+ *                                                                            *
+ * Function: python_str                                                       *
+ *                                                                            *
+ * Purpose: Unmarshall a Python string to a newly allocated C char array.     *
+ *          The caller needs to free the returned reference if it is not      *
+ *          NULL.                                                             *
+ *                                                                            *
+ * Return value: (char*) caller must free                                     *
+ *                                                                            *
+ ******************************************************************************/
 char *
 python_str(PyObject *pyValue)
 {
@@ -14,6 +25,17 @@ python_str(PyObject *pyValue)
     return buf;
 }
 
+/******************************************************************************
+ *                                                                            *
+ * Function: python_log_error                                                 *
+ *                                                                            *
+ * Purpose: Check for an error condition in the Python runtime and log it.    *
+ *          If an AGENT_RESULT* is given, the error message will also be      *
+ *          set in the result value.                                          *
+ *                                                                            *
+ * Return value: non-zero if an error condition was found                     *
+ *                                                                            *
+ ******************************************************************************/
 int
 python_log_error(AGENT_RESULT *result)
 {
@@ -27,7 +49,8 @@ python_log_error(AGENT_RESULT *result)
         if (NULL != (str = python_str(pyValue ? pyValue : pyType))) {
             zabbix_log(LOG_LEVEL_ERR, str);
 
-            // set error message on result struct
+            // set error message on result struct (zabbix will take ownership
+            // of the pointer)
             if (NULL != result)
                 SET_MSG_RESULT(result, str);
             else
@@ -49,13 +72,22 @@ python_log_error(AGENT_RESULT *result)
     return 0;
 }
 
+/******************************************************************************
+ *                                                                            *
+ * Function: python_import_module                                             *
+ *                                                                            *
+ * Purpose: Import a Python module into the runtime context by name.          *
+ *                                                                            *
+ * Return value: (PyObject*) Python Module or NULL on error.                  *
+ *                                                                            *
+ ******************************************************************************/
 PyObject *
 python_import_module(const char *module)
 {
     PyObject *pyName = NULL;
     PyObject *pyModule = NULL;
 
-    pyName = PyUnicode_FromString(module);
+    pyName   = PyUnicode_FromString(module);
     pyModule = PyImport_Import(pyName);
     Py_DECREF(pyName);
 
@@ -67,6 +99,16 @@ python_import_module(const char *module)
     return pyModule;
 }
 
+/******************************************************************************
+ *                                                                            *
+ * Function: python_module_init                                               *
+ *                                                                            *
+ * Purpose: Initialize a Python Zabbix module by calling zbx_module_init if   *
+ *          it is implemented in the module.                                  *
+ *                                                                            *
+ * Return value: (int) SYSINFO_RET_OK or SYSINFO_RET_FAIL                     *
+ *                                                                            *
+ ******************************************************************************/
 int
 python_module_init(PyObject *pyModule)
 {
@@ -140,7 +182,7 @@ python_unmarshal_item(PyObject *pyItem, ZBX_METRIC *item)
  * Function: python_module_item_list                                          *
  *                                                                            *
  * Purpose: call zbx_module_item_list in the given Python module and return   *
- *          an array of unmarshaled ZBX_METRIC items                          *
+ *          an array of unmarshaled ZBX_METRIC structs                        *
  *                                                                            *
  * Return value: pointer to a ZBX_METRIC struct array                         *
  *                                                                            *
