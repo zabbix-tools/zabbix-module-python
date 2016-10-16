@@ -16,7 +16,7 @@ static int ran_after_fork = 0;
 static PyObject*
 python_marshall_request(AGENT_REQUEST *request)
 {
-    PyObject *pyKey = NULL, *pyParams, *pyValue, *pyArgs, *pyRequestClass, *pyRequest;
+    PyObject *pyKey = NULL, *pyParams, *pyArgs, *pyRequestClass, *pyRequest;
     int nparam;
 
     // clear errors
@@ -70,7 +70,6 @@ int
 PYTHON_ROUTER(AGENT_REQUEST *request, AGENT_RESULT *result)
 {
     int         ret = SYSINFO_RET_FAIL;
-    int         nparam = 0, i = 0;
     PyObject    *pyRequest = NULL, *pyArgs = NULL, *pyValue = NULL;
 
     /*

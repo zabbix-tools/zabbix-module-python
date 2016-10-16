@@ -26,7 +26,6 @@ ZBX_METRIC_MAPPING;
 
 pid_t       init_pid;
 
-PyObject    *pySysModule;
 PyObject    *pyAgentModule;
 PyObject    *pyRouterFunc;
 

@@ -3,14 +3,11 @@
 /* Define custom keys */
 static ZBX_METRIC  *keys = NULL;
 
-/* Python sys module */
-PyObject    *pySysModule = NULL;
-
 /* Python complimentary module (zabbix_module) */
-PyObject    *pyAgentModule = NULL;
+PyObject *pyAgentModule = NULL;
 
 /* Python router function (zabbix_module.route) */
-PyObject    *pyRouterFunc = NULL;
+PyObject *pyRouterFunc = NULL;
 
 /* pid that called zbx_module_init */
 pid_t init_pid = 0;
@@ -98,28 +95,43 @@ static ZBX_METRIC
 int         zbx_module_api_version()                { return ZBX_MODULE_API_VERSION; }
 ZBX_METRIC  *zbx_module_item_list()                 { return keys; }
 
-int zbx_module_init() {
+/******************************************************************************
+ *                                                                            *
+ * Function: zbx_module_init                                                  *
+ *                                                                            *
+ * Purpose: Called by Zabbix when the module is first loaded. This            *
+ *          function will initialize the Python runtime and initialize        *
+ *          all installed Python modules.                                     *
+ *                                                                            *
+ * Return value: (int) ZBX_MODULE_OK or ZBX_MODULE_FAIL                       *
+ *                                                                            *
+ ******************************************************************************/
+int
+zbx_module_init() {
     ZBX_METRIC  *m = NULL, *n = NULL;
     PyObject    *pyValue = NULL;
 
     // cache initialization process pid for managing forks later
+    if (init_pid)
+        zabbix_log(LOG_LEVEL_WARNING, "module already initialized by [%i]", init_pid);
+
     init_pid = getpid();
 
     // initialize python runtime
     PyImport_AppendInittab("zabbix_runtime", PyInit_zabbix_runtime);
     Py_Initialize();
 
-    // import python sys module
-    if(NULL == (pySysModule = python_import_module("sys")))
-        return ZBX_MODULE_FAIL;
-
-    // import python module for zabbix
+    // import complimentary zabbix_module Python lib
     if(NULL == (pyAgentModule = python_import_module(PYTHON_MODULE)))
         return ZBX_MODULE_FAIL;
 
     // advise python module of agent module load path
     pyValue = PyUnicode_FromString(ZABBIX_PYTHON_MODULE_PATH);
-    PyObject_SetAttrString(pyAgentModule, "zabbix_module_path", pyValue);
+    if(-1 == PyObject_SetAttrString(pyAgentModule, "zabbix_module_path", pyValue)) {
+        zabbix_log(LOG_LEVEL_ERR, "failed to set " PYTHON_MODULE ".zabbix_module_path");
+        python_log_error(NULL);
+        return ZBX_MODULE_FAIL;
+    }
     Py_DECREF(pyValue);
 
     // call zbx_module_init in python module
@@ -151,7 +163,7 @@ int zbx_module_init() {
         return ZBX_MODULE_FAIL;
     }
     
-    // merge builtin in modular items
+    // merge builtin and in modular items
     keys = zbx_metric_concat(m, n);
     free(m);
     free(n);
@@ -161,9 +173,7 @@ int zbx_module_init() {
 
 int zbx_module_uninit()
 {
-    if (pySysModule)
-        Py_DECREF(pySysModule);
-
+    zabbix_log(LOG_LEVEL_DEBUG, "finalizing Python runtime");
     Py_Finalize();
 
     return ZBX_MODULE_OK;

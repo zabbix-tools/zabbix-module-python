@@ -150,23 +150,24 @@ python_unmarshal_item(PyObject *pyItem, ZBX_METRIC *item)
 {
     PyObject *pyValue;
 
+    // allocate output
     if (NULL == item)
         item = (ZBX_METRIC*) calloc(1, sizeof(ZBX_METRIC));
 
     // unmarshall key
-    if(pyValue = PyObject_GetAttrString(pyItem, "key")) {
+    if(NULL != (pyValue = PyObject_GetAttrString(pyItem, "key"))) {
         item->key = PyUnicode_AsUTF8(pyValue);
         Py_DECREF(pyValue);
     }
 
     // unmarshall flags
-    if(pyValue = PyObject_GetAttrString(pyItem, "flags")) {
+    if(NULL != (pyValue = PyObject_GetAttrString(pyItem, "flags"))) {
         item->flags = (int) PyLong_AsLong(pyValue) | CF_HAVEPARAMS;
         Py_DECREF(pyValue);
     }
 
     // unmarshall test parameter
-    if(pyValue = PyObject_GetAttrString(pyItem, "test_param")) {
+    if(NULL != (pyValue = PyObject_GetAttrString(pyItem, "test_param"))) {
         item->test_param = PyUnicode_AsUTF8(pyValue);
         Py_DECREF(pyValue);
     }
@@ -190,11 +191,11 @@ python_unmarshal_item(PyObject *pyItem, ZBX_METRIC *item)
 ZBX_METRIC *
 python_module_item_list(PyObject *pyModule)
 {
-    ZBX_METRIC *keys = NULL, *item;
-    PyObject *pyFunc, *pyKeys, *pyIter, *pyItem;
-    Py_ssize_t keys_len;
+    ZBX_METRIC  *keys = NULL, *item = NULL;
+    PyObject    *pyFunc, *pyKeys, *pyIter, *pyItem;
+    Py_ssize_t  keys_len;
 
-    const char *moduleName = PyModule_GetName(pyModule);
+    const char  *moduleName = PyModule_GetName(pyModule);
 
     // check for zbx_module_item_list function in module
     if(NULL == (pyFunc = PyObject_GetAttrString(pyModule, "zbx_module_item_list")) || 0 == PyFunction_Check(pyFunc)) {
@@ -215,7 +216,7 @@ python_module_item_list(PyObject *pyModule)
                 item = keys;
 
                 // marshall items
-                while (pyItem = PyIter_Next(pyIter)) {
+                while (NULL != (pyItem = PyIter_Next(pyIter))) {
                     python_unmarshal_item(pyItem, item);                    
                     Py_DECREF(pyItem);
                     item++;
