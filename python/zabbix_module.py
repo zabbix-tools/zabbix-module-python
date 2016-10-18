@@ -1,8 +1,4 @@
 import sys
-import glob
-import os.path
-from re import sub
-from json import JSONEncoder
 
 # attempt to import zabbix runtime if running embedded
 try:
@@ -125,6 +121,7 @@ def version(request):
 def macro_name(key):
   """Converts a string into a Zabbix LLD macro"""
 
+  from re import sub
   macro = key.upper()                     # uppercase
   macro = sub(r'[\s_-]+', '_', macro)     # replace whitespace with underscore
   macro = sub(r'[^a-zA-Z_]+', '', macro)  # strip illegal chars
@@ -136,6 +133,7 @@ def macro_name(key):
 def discovery(data):
   """Converts a Python dict into a Zabbix LLD JSON string"""
 
+  from json import JSONEncoder
   lld_data = { 'data': [] }
   for item in data:
     lld_item = {}
@@ -215,15 +213,20 @@ def zbx_module_init():
   It initializes and registers builtin AgentItems and all modules from the
   configured zabbix_module_path.
   """
-  mod_names = []
-  
+
+  import glob
+  import os.path
+
   # ensure module path is in search path
   sys.path.insert(0, zabbix_module_path)
 
   # register builtin items
   register_item(AgentItem("python.version", fn = version))
 
-  # register installed agent packages
+  # init list of modules to register
+  mod_names = []
+
+  # register installed packages
   for path in glob.glob(zabbix_module_path + "/*/__init__.py"):
     mod_name = os.path.basename(os.path.split(path)[0])
 
@@ -231,7 +234,7 @@ def zbx_module_init():
       mod_names.append(mod_name)
       register_module(mod_name)
 
-  # register installed agent modules
+  # register installed modules
   for path in glob.glob(zabbix_module_path + "/*.py"):
     filename = os.path.basename(path)
     mod_name = filename[0:len(filename) - 3]
