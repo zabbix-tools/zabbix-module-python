@@ -56,7 +56,16 @@ def error(msg):
 def critical(msg):
   log(LOG_LEVEL_CRIT, msg)
 
-class AgentRequest:
+class TimeoutError(Exception):
+  """
+  TimeoutError should be raised by any agent item handler whose execution
+  exceeds item_timeout seconds
+  """
+
+  def __str__(self):
+    return 'Operation timed out'
+
+class AgentRequest(object):
   key    = None
   params = []
 
@@ -67,7 +76,7 @@ class AgentRequest:
   def __str__(self):
     return "{0}[{1}]".format(self.key, ','.join(self.params))
 
-class AgentItem:
+class AgentItem(object):
   key        = None
   flags      = 0
   test_param = None
