@@ -92,7 +92,13 @@ static ZBX_METRIC
 }
 
 // Required Zabbix module functions
+#ifdef ZBX_MODULE_API_VERSION
+// Recommended Zabbix 3.2.x
 int         zbx_module_api_version()                { return ZBX_MODULE_API_VERSION; }
+#else
+// Zabbix 3.0 support
+int         zbx_module_api_version()                { return ZBX_MODULE_API_VERSION_ONE; }
+#endif
 ZBX_METRIC  *zbx_module_item_list()                 { return keys; }
 
 /******************************************************************************
