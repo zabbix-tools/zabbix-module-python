@@ -1,3 +1,6 @@
+__pycache__/
+.deps/
+.libs/
 *.build
 *.changes
 *.deb
@@ -16,16 +19,13 @@
 *.tgz
 *.xz
 *~
-/src/.deps/
-/src/.libs/
 /.vagrant/
 /autom4te.cache/
+/m4/
 /python/build/
 /python/dist/
-/m4/
 /src/**/Makefile
 /zabbix-*/
-__pycache__/
 aclocal.m4
 ar-lib
 compile

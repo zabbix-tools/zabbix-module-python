@@ -1,4 +1,4 @@
-AC_INIT([libzbxpython], [1.0.0], [ryan@cavaliercoder.com])
+AC_INIT([zabbix-module-python], [1.0.0], [ryan@cavaliercoder.com])
 AM_INIT_AUTOMAKE([-Wall -Werror -Wno-portability foreign])
 m4_pattern_allow([AM_PROG_AR])
 AM_PROG_AR
@@ -58,7 +58,7 @@ dnl output
 dnl
 AC_CONFIG_FILES([
  Makefile
- src/Makefile
+ src/modules/python/Makefile
  python/Makefile
 ])
 AC_OUTPUT
