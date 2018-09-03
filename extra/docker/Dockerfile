@@ -24,6 +24,11 @@ RUN cd /usr/src/zabbix-module-python && \
     make && \
     make install
 
+RUN cp /usr/lib/zabbix/modules/libzbxpython3.so /var/lib/zabbix/modules/ && \
+    mkdir /var/lib/zabbix/modules/python3
+
 RUN rm -rf /etc/zabbix/zabbix_agentd.d
 
-CMD [ "/bin/bash" ]
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN ln -s usr/local/bin/docker-entrypoint.sh / # backwards compat
+ENTRYPOINT ["/docker-entrypoint.sh"]
