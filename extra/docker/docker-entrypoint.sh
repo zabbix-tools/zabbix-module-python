@@ -1055,8 +1055,6 @@ fi
 
 prepare_system "$zbx_type" "$zbx_opt_type"
 
-cp /usr/lib/zabbix/modules $ZABBIX_USER_HOME_DIR
-
 [ "$zbx_type" == "server" ] && prepare_server $zbx_db_type
 [ "${ZBX_ADD_SERVER}" == "true" ] && prepare_server ${ZBX_MAIN_DB}
 
@@ -1071,6 +1069,9 @@ cp /usr/lib/zabbix/modules $ZABBIX_USER_HOME_DIR
 
 [ "$zbx_type" == "java-gateway" ] && prepare_java_gateway
 [ "${ZBX_ADD_JAVA_GATEWAY}" == "true" ] && prepare_java_gateway
+
+cp -r /usr/lib/zabbix/modules $ZABBIX_USER_HOME_DIR
+mkdir $ZABBIX_USER_HOME_DIR/modules/python3
 
 clear_deploy "$zbx_type"
 
