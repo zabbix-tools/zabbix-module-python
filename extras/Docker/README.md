@@ -1,9 +1,13 @@
 # Build your the modules with Docker container
 
+> Currently only a python 3.7 on debian stretch image is available. So the modules may only work on debian based distributions.
+
 ## As long as default container image is not available
 
-```cd /extras/Docker
-docker build . --rm --tag cavaliercoder/zmp:latest
+First, build the docker image locally.
+
+```cd /extras/Docker/python-3.7-stretch
+docker build . --rm --tag cavaliercoder/zmp:python-3.7-stretch
 ```
 
 ## To build your module
@@ -30,3 +34,7 @@ docker run --rm -v "$PWD":/root/app -e ZBX_SOURCE_VERSION=3.4.11 cavaliercoder/z
 ```
 
 > If you provide a version other than the baked in, it will be fetched while build time!
+
+## Python 2.x and other linux distributions
+
+If you need to build your module with Python 2.x or on another linux distribution than debian, then you have to stick to the default build method you can find in the repository root.
